@@ -1,7 +1,10 @@
 package objects
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/esurdam/go-sophos"
 )
@@ -955,6 +958,92 @@ func (*NetworkNetwork) UsedByPath(ref string) string {
 
 // GetType implements sophos.Object
 func (n *NetworkNetwork) GetType() string { return n.ObjectType }
+
+// UnmarshalJSON custom unmarshal function handles type bug in sophos utm api
+func (n *NetworkNetwork) UnmarshalJSON(b []byte) error {
+	var parsed map[string]interface{}
+
+	err := json.Unmarshal(b, &parsed)
+	if err != nil {
+		return err
+	}
+
+	if val, ok := parsed["_locked"]; ok {
+		n.Locked = val.(string)
+	}
+
+	if val, ok := parsed["_ref"]; ok {
+		n.Reference = val.(string)
+	}
+
+	if val, ok := parsed["address"]; ok {
+		n.Address = val.(string)
+	}
+
+	if val, ok := parsed["address6"]; ok {
+		n.Address6 = val.(string)
+	}
+
+	if val, ok := parsed["comment"]; ok {
+		n.Locked = val.(string)
+	}
+
+	if val, ok := parsed["interface"]; ok {
+		n.Interface = val.(string)
+	}
+
+	if val, ok := parsed["name"]; ok {
+		n.Name = val.(string)
+	}
+
+	if val, ok := parsed["netmask"]; ok {
+		switch val := val.(type) {
+		case string:
+			i, err := strconv.ParseInt(val, 10, 64)
+			if err != nil {
+				return err
+			}
+			n.Netmask = i
+			break
+		case int64:
+			n.Netmask = val
+			break
+		case float64:
+			n.Netmask = int64(val)
+		default:
+			return errors.New("unsupported type for netmask")
+		}
+	}
+
+	if val, ok := parsed["netmask6"]; ok {
+		switch val := val.(type) {
+		case string:
+			i, err := strconv.ParseInt(val, 10, 64)
+			if err != nil {
+				return err
+			}
+			n.Netmask6 = i
+			break
+		case int64:
+			n.Netmask6 = val
+			break
+		case float64:
+			n.Netmask6 = int64(val)
+		default:
+			return errors.New("unsupported type for netmask6")
+		}
+	}
+
+	if val, ok := parsed["resolved"]; ok {
+		n.Resolved = val.(bool)
+	}
+
+	if val, ok := parsed["resolved6"]; ok {
+		n.Resolved6 = val.(bool)
+	}
+
+	return nil
+}
 
 // NetworkRanges is an Sophos Endpoint subType and implements sophos.RestObject
 type NetworkRanges []NetworkRange
